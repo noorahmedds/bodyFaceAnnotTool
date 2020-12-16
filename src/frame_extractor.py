@@ -55,6 +55,7 @@ def main(video_path):
             os.mkdir(folder_path)
 
     yolo_model = get_model("../yolov5/weights/yolov5s_body_face_baseline.pt")
+    
     while cap.isOpened():
         ret, frame = cap.read()
 
