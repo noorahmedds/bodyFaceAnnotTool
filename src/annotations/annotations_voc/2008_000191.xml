@@ -1,0 +1,37 @@
+<annotation>
+    <folder>train</folder>
+    <filename>2008_000191.jpg</filename>
+    <path>/home/noorahmedds/Desktop/Work/FaceBodyDet/Datasets/OnlyBodyAndFace/images/train/2008_000191.jpg</path>
+    <source>
+        <database>Unknown</database>
+    </source>
+    <size>
+        <width>500</width>
+        <height>375</height>
+        <depth>3</depth>
+    </size>
+    <segmented>0</segmented>
+    <object>
+        <name>body</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>24</xmin>
+            <ymin>178</ymin>
+            <xmax>54</xmax>
+            <ymax>252</ymax>
+        </bndbox>
+    </object>    <object>
+        <name>body</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>70</xmin>
+            <ymin>182</ymin>
+            <xmax>92</xmax>
+            <ymax>211</ymax>
+        </bndbox>
+    </object>
+</annotation>

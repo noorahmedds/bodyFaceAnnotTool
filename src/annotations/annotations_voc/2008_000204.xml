@@ -1,0 +1,15 @@
+<annotation>
+    <folder>train</folder>
+    <filename>2008_000204.jpg</filename>
+    <path>/home/noorahmedds/Desktop/Work/FaceBodyDet/Datasets/OnlyBodyAndFace/images/train/2008_000204.jpg</path>
+    <source>
+        <database>Unknown</database>
+    </source>
+    <size>
+        <width>346</width>
+        <height>500</height>
+        <depth>3</depth>
+    </size>
+    <segmented>0</segmented>
+
+</annotation>
