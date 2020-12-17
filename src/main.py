@@ -7,7 +7,7 @@ Copyright {2018} {Viraj Mavani}
 """
 
 import sys
-sys.path.append("../../yolov5")
+sys.path.append("../../yolov5_mod")
 
 from shortcut_keys import *
 
@@ -246,7 +246,8 @@ class MainGUI:
             self.cocoLabels = config.labels_to_names_yolo.values()
 
             # Adding yolo here instead
-            self.yolo_model = detect.get_model("../../yolov5/runs/train/bodyfacenegative/weights/best.pt")
+            # self.yolo_model = detect.get_model("../../yolov5/runs/train/bodyfacenegative/weights/best.pt")
+            self.yolo_model = detect.get_model("./weights/bodyFaceYolov5s.pt")
             print("YOLO MODEL WAS LOADED")
             for label in self.cocoLabels:
                 self.add_label_(label)
@@ -303,8 +304,8 @@ class MainGUI:
         self.load_image(self.filenameBuffer)
 
     def open_image_dir(self):
-        # self.imageDir = filedialog.askdirectory(title="Select Dataset Directory")
-        self.imageDir = "/home/noorahmedds/Desktop/Work/FaceBodyDet/Datasets/OnlyBodyAndFace/images/train"
+        self.imageDir = filedialog.askdirectory(title="Select Dataset Directory")
+        # self.imageDir = "/home/noorahmedds/Desktop/Work/FaceBodyDet/Datasets/OnlyBodyAndFace/images/train"
         if not self.imageDir:
             return None
         self.imageList = os.listdir(self.imageDir)
