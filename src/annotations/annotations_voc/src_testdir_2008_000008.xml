@@ -1,7 +1,7 @@
 <annotation>
-    <folder>train</folder>
+    <folder>testdir</folder>
     <filename>2008_000008.jpg</filename>
-    <path>/home/noorahmedds/Desktop/Work/FaceBodyDet/Datasets/OnlyBodyAndFace/images/train/2008_000008.jpg</path>
+    <path>/home/noorahmedds/Desktop/Work/BodyFaceTool/src/testdir/2008_000008.jpg</path>
     <source>
         <database>Unknown</database>
     </source>
@@ -13,7 +13,7 @@
     <segmented>0</segmented>
     <object>
         <name>body</name>
-        <pose>Unspecified</pose>
+        <pose>{'age': '23', 'gender': 'True', 'mask': 'False', 'frontal': 'False', 'visibility': '4', 'has_analytics': True, 'xmin': 169, 'ymin': 57, 'xmax': 193, 'ymax': 86}</pose>
         <truncated>0</truncated>
         <difficult>0</difficult>
         <bndbox>

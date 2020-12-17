@@ -7,30 +7,35 @@ Copyright {2018} {Viraj Mavani}
 """
 
 import sys
+
 sys.path.append("../../yolov5_mod")
 
-from shortcut_keys import *
+import untangle
+import ast
 
-import detect
-
+# import tf_config
+import math
+# import miscellaneous modules
+import os
+# make sure the file is inside semi-auto-image-annotation-tool-master
+import pathlib
 from tkinter import *
 from tkinter import filedialog
+
+import detect
+import numpy as np
+from pascal_voc_writer import Writer
 from PIL import Image, ImageTk
+
+# import tensorflow as tf
+import config
+from shortcut_keys import *
+
 # import keras
 # from keras_retinanet import models
 # from keras_retinanet.utils.image import preprocess_image
 
-# import miscellaneous modules
-import os
-import numpy as np
-# import tensorflow as tf
-import config
-# import tf_config
-import math
-from pascal_voc_writer import Writer
 
-# make sure the file is inside semi-auto-image-annotation-tool-master
-import pathlib
 # cur_path = pathlib.Path(__file__).parent.absolute()
 cur_path = pathlib.Path(__file__).parent.absolute().as_posix()
 sys.path.append(cur_path)
@@ -61,6 +66,7 @@ class MainGUI:
         self.imageList = []
         self.imageTotal = 0
         self.imageCur = 0
+        self.save_count = 0
         self.cur = 0
         self.bboxIdList = []
         self.bboxList = []
@@ -211,6 +217,12 @@ class MainGUI:
                       offvalue = False, variable=self.is_male, state="disabled")
         self.maleCheck.pack(fill=X, side=TOP)
 
+        self.addThresh = Label(self.listPanel, text="Mask").pack(fill=X, side=TOP)
+        self.wearing_mask = BooleanVar()
+        self.maskCheck = Checkbutton(self.listPanel, text="wearing mask", onvalue = True, 
+                      offvalue = False, variable=self.wearing_mask, state="disabled")
+        self.maskCheck.pack(fill=X, side=TOP)
+
         self.is_frontal = BooleanVar()
         self.addThresh = Label(self.listPanel, text="Frontal|Non Frontal").pack(fill=X, side=TOP)
         self.frontalCheck = Checkbutton(self.listPanel, text="is frontal", onvalue = True, 
@@ -235,7 +247,7 @@ class MainGUI:
         self.enteranalytics = Button(self.listPanel, text="Set", command=self.changeAnalytics, state='disabled')
         self.enteranalytics.pack(fill=X, side=TOP)
 
-        self.analytics_elements = [self.textBoxAge, self.maleCheck, self.enteranalytics, self.frontalCheck, self.faceradio0, self.faceradio1, self.faceradio2, self.faceradio3, self.faceradio4, self.faceradio5]
+        self.analytics_elements = [self.textBoxAge, self.maleCheck, self.enteranalytics, self.frontalCheck, self.faceradio0, self.faceradio1, self.faceradio2, self.faceradio3, self.faceradio4, self.faceradio5, self.maskCheck]
 
         if self.keras_:
             self.cocoLabels = config.labels_to_names.values()
@@ -318,8 +330,117 @@ class MainGUI:
     def open_video_file(self):
         pass
 
+    def load_annot(self):
+        # Read xml file to memory
+        # Parse the objects and draw them on the image
+        # Create bboxes first
+        # Update the two new variable self.face_analytics if required and self.body_face_association
+        
+        prefix = "_".join(self.imageDirPathBuffer.split("/")[-2:]) + "_"
+        baseName = os.path.splitext(self.imageList[self.cur])[0]
+        save_dir = 'annotations/annotations_voc/'
+        save_path = save_dir + prefix + baseName + '.xml'
+
+        if os.path.exists(save_path):
+            obj = untangle.parse(save_path)
+
+            bodies = obj.annotation.object
+            obj_idx = -1
+            for body in bodies:
+                obj_idx += 1
+                xmin = int(body.bndbox.xmin.cdata)
+                ymin = int(body.bndbox.ymin.cdata)
+                xmax = int(body.bndbox.xmax.cdata)
+                ymax = int(body.bndbox.ymax.cdata)
+                
+                b = [xmin, ymin, xmax, ymax]
+                self.bboxId = self.canvas.create_rectangle(b[0], b[1],
+                                                       b[2], b[3],
+                                                       width=2,
+                                                       outline=config.COLORS[len(self.bboxList) % len(config.COLORS)])
+                self.bboxList.append((b[0], b[1], b[2], b[3]))
+                o1 = self.canvas.create_oval(b[0] - 3, b[1] - 3, b[0] + 3, b[1] + 3, fill="red")
+                o2 = self.canvas.create_oval(b[2] - 3, b[1] - 3, b[2] + 3, b[1] + 3, fill="red")
+                o3 = self.canvas.create_oval(b[2] - 3, b[3] - 3, b[2] + 3, b[3] + 3, fill="red")
+                o4 = self.canvas.create_oval(b[0] - 3, b[3] - 3, b[0] + 3, b[3] + 3, fill="red")
+
+                self.bboxPointList.append(o1)
+                self.bboxPointList.append(o2)
+                self.bboxPointList.append(o3)
+                self.bboxPointList.append(o4)
+
+                self.bboxIdList.append(self.bboxId)
+                self.bboxId = None
+                self.objectLabelList.append(body.name.cdata)
+                self.objectListBox.insert(END, '(%d, %d) -> (%d, %d)' % (b[0], b[1], b[2], b[3]) + ': ' +
+                                    body.name.cdata)
+
+                self.objectListBox.itemconfig(len(self.bboxIdList) - 1,
+                                          fg=config.COLORS[(len(self.bboxIdList) - 1) % len(config.COLORS)])
+
+                associated_face = body.pose.cdata
+                
+                if associated_face != "Unspecified" and body.name.cdata == "body":
+                    obj_idx += 1
+                    self.body_face_association[obj_idx - 1] = obj_idx
+
+                    associated_face = ast.literal_eval(associated_face)
+                    if associated_face['has_analytics']:
+                        self.face_analytics[obj_idx] = {
+                                    "age": associated_face["age"],
+                                    "gender": associated_face["gender"],
+                                    "mask": associated_face["mask"],
+                                    "frontal": associated_face["frontal"],
+                                    "visibility": associated_face["visibility"],
+                                }
+
+                    # parse as a dictionary and then perform the deed
+                    xmin = int(associated_face["xmin"])
+                    ymin = int(associated_face["ymin"])
+                    xmax = int(associated_face["xmax"])
+                    ymax = int(associated_face["ymax"])
+                    
+                    
+                    b = [xmin, ymin, xmax, ymax]
+                    self.bboxId = self.canvas.create_rectangle(b[0], b[1],
+                                                        b[2], b[3],
+                                                        width=2,
+                                                        outline=config.COLORS[len(self.bboxList) % len(config.COLORS)])
+                    self.bboxList.append((b[0], b[1], b[2], b[3]))
+                    o1 = self.canvas.create_oval(b[0] - 3, b[1] - 3, b[0] + 3, b[1] + 3, fill="red")
+                    o2 = self.canvas.create_oval(b[2] - 3, b[1] - 3, b[2] + 3, b[1] + 3, fill="red")
+                    o3 = self.canvas.create_oval(b[2] - 3, b[3] - 3, b[2] + 3, b[3] + 3, fill="red")
+                    o4 = self.canvas.create_oval(b[0] - 3, b[3] - 3, b[0] + 3, b[3] + 3, fill="red")
+
+                    self.bboxPointList.append(o1)
+                    self.bboxPointList.append(o2)
+                    self.bboxPointList.append(o3)
+                    self.bboxPointList.append(o4)
+
+                    self.bboxIdList.append(self.bboxId)
+                    self.bboxId = None
+                    self.objectLabelList.append('face')
+                    self.objectListBox.insert(END, '(%d, %d) -> (%d, %d)' % (b[0], b[1], b[2], b[3]) + ': ' +
+                                        'face')
+
+                    self.objectListBox.itemconfig(len(self.bboxIdList) - 1,
+                                            fg=config.COLORS[(len(self.bboxIdList) - 1) % len(config.COLORS)])
+                
+                elif associated_face != "Unspecified" and body.name.cdata == "face":
+                    associated_face = ast.literal_eval(associated_face)
+                    self.face_analytics[obj_idx] = {
+                                "age": associated_face["age"],
+                                "gender": associated_face["gender"],
+                                "mask": associated_face["mask"],
+                                "frontal": associated_face["frontal"],
+                                "visibility": associated_face["visibility"],
+                            }
+
+        return
+
     def load_image(self, file):
         self.img = Image.open(file)
+        self.save_count = 0
         self.imageCur = self.cur + 1
         self.imageIdxLabel.config(text='  ||   Image Number: %d / %d' % (self.imageCur, self.imageTotal))
         # Resize to Pascal VOC format
@@ -339,7 +460,8 @@ class MainGUI:
         self.tkimg = ImageTk.PhotoImage(self.img)
         self.canvas.create_image(0, 0, image=self.tkimg, anchor=NW)
         self.clear_bbox()
-        self.automate()
+
+        self.load_annot()
 
     def open_next(self, event=None):
         self.current_selection = None
@@ -362,32 +484,68 @@ class MainGUI:
             self.automate()
 
     def save(self, event=None):
-        print("SAVING TO FILE")
+        self.save_count += 1
+        self.imageIdxLabel.config(text=' Saved to directory (%d) ||   Image Number: %d / %d' % (self.save_count, self.imageCur, self.imageTotal))
         if self.filenameBuffer is None:
             w, h = self.img.size
             self.writer = Writer(os.path.join(self.imageDirPathBuffer , self.imageList[self.cur]), w, h)
             self.annotation_file = open('annotations/' + self.anno_filename, 'a')
+
             for idx, item in enumerate(self.bboxList):
-                x1, y1, x2, y2 = self.bboxList[idx]
-                self.writer.addObject(str(self.objectLabelList[idx]), x1, y1, x2, y2)
+                # If body then add object:
+                # if face skip its writing entirely
+
+                if str(self.objectLabelList[idx]) == "face":
+                    continue
+                # if associated_face_idx != -1 and associated_face_idx not in self.face_analytics:
+                #     self.imageIdxLabel.config(text=' Did not save to directory. You forgot to add analytics to one of the faces ||   Image Number: %d / %d' % (self.imageCur, self.imageTotal))
 
                 associated_face_idx = -1
+                face_analytics = "Unspecified"
                 if str(self.objectLabelList[idx]) == "body":
                     # Write associated face as well here
                     if idx in self.body_face_association:
                         associated_face_idx = self.body_face_association[idx]
+                        face_analytics = {}
+                        face_analytics["xmin"] = self.bboxList[associated_face_idx][0]
+                        face_analytics["ymin"] = self.bboxList[associated_face_idx][1]
+                        face_analytics["xmax"] = self.bboxList[associated_face_idx][2]
+                        face_analytics["ymax"] = self.bboxList[associated_face_idx][3]
+                        face_analytics["has_analytics"] = False
+                        if associated_face_idx in self.face_analytics:
+                            self.face_analytics[associated_face_idx]["has_analytics"] = True
+                            self.face_analytics[associated_face_idx]["xmin"] = self.bboxList[associated_face_idx][0]
+                            self.face_analytics[associated_face_idx]["ymin"] = self.bboxList[associated_face_idx][1]
+                            self.face_analytics[associated_face_idx]["xmax"] = self.bboxList[associated_face_idx][2]
+                            self.face_analytics[associated_face_idx]["ymax"] = self.bboxList[associated_face_idx][3]
+                            face_analytics = self.face_analytics[associated_face_idx]
 
-                face_analytics = "None" if idx not in self.face_analytics else ",".join(list(self.face_analytics[idx].values()))
+                x1, y1, x2, y2 = self.bboxList[idx]
+                self.writer.addObject(str(self.objectLabelList[idx]), x1, y1, x2, y2, str(face_analytics))
 
                 self.annotation_file.write(self.imageDirPathBuffer + '/' + self.imageList[self.cur] + ',' +
                                            ','.join(map(str, self.bboxList[idx])) + ',' + str(self.objectLabelList[idx])
-                                           + ',' + str(associated_face_idx) + "," + face_analytics
+                                           + ',' + str(associated_face_idx) + "," + str(face_analytics)
                                            + '\n')
 
+            #Traversing faces only
+            for idx, item in enumerate(self.bboxList):
+                if str(self.objectLabelList[idx]) == "body":
+                    continue
+                
+                if idx not in self.body_face_association.values():
+                    # Has not been assosciated. Will be added as its own object
+                    x1, y1, x2, y2 = self.bboxList[idx]
+                    face_analytics = "Unspecified"
+                    if idx in self.face_analytics:
+                        face_analytics = str(self.face_analytics[idx])
+                    self.writer.addObject(str(self.objectLabelList[idx]), x1, y1, x2, y2, str(face_analytics))
+
             self.annotation_file.close()
+            prefix = "_".join(self.imageDirPathBuffer.split("/")[-2:]) + "_"
             baseName = os.path.splitext(self.imageList[self.cur])[0]
             save_dir = 'annotations/annotations_voc/'
-            save_path = save_dir + baseName + '.xml'
+            save_path = save_dir + prefix + baseName + '.xml'
             if(not os.path.exists(save_dir)):
                 os.mkdir(save_dir)
 
@@ -403,15 +561,16 @@ class MainGUI:
                 self.annotation_file.write(self.filenameBuffer + ',' + ','.join(map(str, self.bboxList[idx])) + ','
                                            + str(self.objectLabelList[idx]) + '\n')
             self.annotation_file.close()
+            prefix = "_".join(self.imageDirPathBuffer.split("/")[-2:]) + "_"
             baseName = os.path.splitext(self.imageList[self.cur])[0]
-            self.writer.save('annotations/annotations_voc/' + baseName + '.xml')
+            self.writer.save('annotations/annotations_voc/' + prefix + baseName + '.xml')
             self.writer = None
 
     def mouse_click(self, event):
         # Check if Updating BBox
-        if self.canvas.find_enclosed(event.x - 5, event.y - 5, event.x + 5, event.y + 5):
+        if self.canvas.find_enclosed(event.x - 10, event.y - 10, event.x + 10, event.y + 10):
             self.EDIT = True
-            self.editPointId = int(self.canvas.find_enclosed(event.x - 5, event.y - 5, event.x + 5, event.y + 5)[0])
+            self.editPointId = int(self.canvas.find_enclosed(event.x - 10, event.y - 10, event.x + 10, event.y + 10)[0])
         else:
             self.EDIT = False
 
@@ -572,8 +731,9 @@ class MainGUI:
         self.face_analytics[idx] = {
             "age": self.textBoxAge.get(),
             "gender": str(self.is_male.get()),
+            "mask": str(self.wearing_mask.get()),
             "frontal": str(self.is_frontal.get()),
-            "visibility": str(self.face_visibility.get())
+            "visibility": str(self.face_visibility.get()),
         }
         
 
