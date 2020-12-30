@@ -8,7 +8,7 @@ Copyright {2018} {Viraj Mavani}
 
 import sys
 
-sys.path.append("../../yolov5_mod")
+# sys.path.append("../../yolov5_mod")
 
 import untangle
 import ast
@@ -22,7 +22,7 @@ import pathlib
 from tkinter import *
 from tkinter import filedialog
 
-import detect
+# import detect
 import numpy as np
 from pascal_voc_writer import Writer
 from PIL import Image, ImageTk
@@ -129,8 +129,8 @@ class MainGUI:
         self.radioBtnAuto.grid(row=7, column=0, sticky=W + E)
         self.radioBtnManual = Radiobutton(self.ctrlPanel, text="Manual", variable=self.autoSuggest, value=2)
         self.radioBtnManual.grid(row=7, column=1, sticky=W + E)
-        self.semiAutoBtn = Button(self.ctrlPanel, text="Detect", command=self.automate)
-        self.semiAutoBtn.grid(columnspan=2, sticky=W + E)
+        # self.semiAutoBtn = Button(self.ctrlPanel, text="Detect", command=self.automate)
+        # self.semiAutoBtn.grid(columnspan=2, sticky=W + E)
         self.disp = Label(self.ctrlPanel, text='Coordinates:')
         self.disp.grid(columnspan=2, sticky=W + E)
 
@@ -254,13 +254,13 @@ class MainGUI:
         elif self.tensorflow_:
             self.cocoLabels = tf_config.labels_to_names.values()
         elif self.yolo_:
-            # Setup some initial yolo configs here
-            self.cocoLabels = config.labels_to_names_yolo.values()
+            # # Setup some initial yolo configs here
+            # self.cocoLabels = config.labels_to_names_yolo.values()
 
-            # Adding yolo here instead
-            # self.yolo_model = detect.get_model("../../yolov5/runs/train/bodyfacenegative/weights/best.pt")
-            self.yolo_model = detect.get_model("./weights/bodyFaceYolov5s.pt")
-            print("YOLO MODEL WAS LOADED")
+            # # Adding yolo here instead
+            # # self.yolo_model = detect.get_model("../../yolov5/runs/train/bodyfacenegative/weights/best.pt")
+            # self.yolo_model = detect.get_model("./weights/bodyFaceYolov5s.pt")
+            # print("YOLO MODEL WAS LOADED")
             for label in self.cocoLabels:
                 self.add_label_(label)
 
